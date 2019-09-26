@@ -11,6 +11,7 @@
   "author": "huhn",
   "license": "ISC",
   "dependencies": {
-    "iota-payment": "0.0.14"
+    "iota-payment": "0.0.14",
+    "python-shell": "^1.0.8"
   }
 }
