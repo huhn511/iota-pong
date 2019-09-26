@@ -33,37 +33,68 @@ var onPaymentSuccess = function (payment) {
         if (err) throw err;
         // results is an array consisting of messages collected during execution
         console.log('results show_ball: %j', results);
+
+        // throw the ball
+        PythonShell.run('./python/scripts/send.py', {}, function (err, results) {
+            if (err) throw err;
+            // results is an array consisting of messages collected during execution
+            console.log('results wait: %j', results);
+
+
+            fetch(PLAYER2_URL, {
+                method: 'post',
+                body: JSON.stringify(body),
+                headers: { 'Content-Type': 'application/json' },
+            })
+                .then(res => res.json())
+                .then(response => {
+                    // send all tokens to this payment:
+                    console.log("send tokens to this payment: ", response.payment.address)
+                    paymentModule.payout.send({ address: response.payment.address, value: payment.value })
+                        .then(result => {
+                            console.log("THE BALL IS GONE")
+                            console.log("PING!", result)
+                            PythonShell.run('./python/scripts/show_success.py', {}, function (err, results) {
+                                if (err) throw err;
+                                // results is an array consisting of messages collected during execution
+                                console.log('results show_success: %j', results);
+                                PythonShell.run('./python/scripts/standby.py', {}, function (err, results) {
+                                    if (err) throw err;
+                                    // results is an array consisting of messages collected during execution
+                                    console.log('results standby: %j', results);
+                                });
+                            });
+                        })
+                        .catch(err => {
+                            console.log(err)
+                        })
+                });
+
+        });
+
+
     });
 
-    fetch(PLAYER2_URL, {
-        method: 'post',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
-    })
-        .then(res => res.json())
-        .then(response => {
-            // send all tokens to this payment:
-            console.log("send tokens to this payment: ", response.payment.address)
-            paymentModule.payout.send({ address: response.payment.address, value: payment.value })
-                .then(result => {
-                    console.log("THE BALL IS GONE")
-                    console.log("PING!", result)
-                    PythonShell.run('./python/scripts/show_success.py', {}, function (err, results) {
-                        if (err) throw err;
-                        // results is an array consisting of messages collected during execution
-                        console.log('results show_success: %j', results);
-                    });
-                })
-                .catch(err => {
-                    console.log(err)
-                })
-        });
+
+}
+
+//Create an event handler which is called, when a payment was created
+var onPaymentCreated = function (payment) {
+    console.log('payment created!', payment);
+    // wait for a ball
+    PythonShell.run('./python/scripts/wait.py', {}, function (err, results) {
+        if (err) throw err;
+        // results is an array consisting of messages collected during execution
+        console.log('results wait: %j', results);
+    });
 }
 
 paymentModule.on('paymentSuccess', onPaymentSuccess);
+paymentModule.on('paymentCreated', onPaymentCreated);
 
-PythonShell.run('./python/scripts/wait.py', {}, function (err, results) {
+
+PythonShell.run('./python/scripts/standby.py', {}, function (err, results) {
     if (err) throw err;
     // results is an array consisting of messages collected during execution
-    console.log('results wait: %j', results);
+    console.log('results standby: %j', results);
 });
