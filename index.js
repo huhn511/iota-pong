@@ -34,43 +34,25 @@ var onPaymentSuccess = function (payment) {
         // results is an array consisting of messages collected during execution
         console.log('results show_ball: %j', results);
 
-        // throw the ball
-        PythonShell.run('./python/scripts/send.py', {}, function (err, results) {
-            if (err) throw err;
-            // results is an array consisting of messages collected during execution
-            console.log('results wait: %j', results);
+        fetch(PLAYER2_URL, {
+            method: 'post',
+            body: JSON.stringify(body),
+            headers: { 'Content-Type': 'application/json' },
+        })
+            .then(res => res.json())
+            .then(response => {
+                // send all tokens to this payment:
+                console.log("send tokens to this payment: ", response.payment.address)
+                paymentModule.payout.send({ address: response.payment.address, value: payment.value })
+                    .then(result => {
+                        console.log("THE BALL IS GONE")
+                        console.log("PING!", result)   
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
+            });
 
-
-            fetch(PLAYER2_URL, {
-                method: 'post',
-                body: JSON.stringify(body),
-                headers: { 'Content-Type': 'application/json' },
-            })
-                .then(res => res.json())
-                .then(response => {
-                    // send all tokens to this payment:
-                    console.log("send tokens to this payment: ", response.payment.address)
-                    paymentModule.payout.send({ address: response.payment.address, value: payment.value })
-                        .then(result => {
-                            console.log("THE BALL IS GONE")
-                            console.log("PING!", result)
-                            PythonShell.run('./python/scripts/show_success.py', {}, function (err, results) {
-                                if (err) throw err;
-                                // results is an array consisting of messages collected during execution
-                                console.log('results show_success: %j', results);
-                                PythonShell.run('./python/scripts/standby.py', {}, function (err, results) {
-                                    if (err) throw err;
-                                    // results is an array consisting of messages collected during execution
-                                    console.log('results standby: %j', results);
-                                });
-                            });
-                        })
-                        .catch(err => {
-                            console.log(err)
-                        })
-                });
-
-        });
 
 
     });
@@ -89,8 +71,53 @@ var onPaymentCreated = function (payment) {
     });
 }
 
-paymentModule.on('paymentSuccess', onPaymentSuccess);
+//Create an event handler which is called, when a payment was created
+var onpaymentIncoming = function (payment) {
+    console.log('payment created!', payment);
+    // wait for a ball
+    PythonShell.run('./python/scripts/fetch.py', {}, function (err, results) {
+        if (err) throw err;
+        // results is an array consisting of messages collected during execution
+        console.log('results fetch: %j', results);
+    });
+}
+
+
+var onpayoutCreated = function (payout) {
+    console.log('payout created!', payout);
+
+    // targeting player to throw the ball
+    // throw the ball
+    PythonShell.run('./python/scripts/send.py', {}, function (err, results) {
+        if (err) throw err;
+        // results is an array consisting of messages collected during execution
+        console.log('results wait: %j', results);
+    });
+}
+
+var onpayoutSuccess = function (payout) {
+    console.log('payout success!', payout);
+
+    // throw the ball
+    PythonShell.run('./python/scripts/show_success.py', {}, function (err, results) {
+        if (err) throw err;
+        // results is an array consisting of messages collected during execution
+        console.log('results wait: %j', results);
+        PythonShell.run('./python/scripts/standby.py', {}, function (err, results) {
+            if (err) throw err;
+            // results is an array consisting of messages collected during execution
+            console.log('results standby: %j', results);
+        });
+    });
+}
+
+
 paymentModule.on('paymentCreated', onPaymentCreated);
+paymentModule.on('paymentIncoming', onpaymentIncoming);
+paymentModule.on('paymentSuccess', onPaymentSuccess);
+
+paymentModule.on('payoutSuccess', onpayoutSuccess);
+paymentModule.on('payoutCreated', onpayoutCreated);
 
 
 PythonShell.run('./python/scripts/standby.py', {}, function (err, results) {
