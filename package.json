@@ -1,0 +1,16 @@
+{
+  "name": "iota-pong",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "start-p2": "node -r dotenv/config index.js dotenv_config_path=.env_player2",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "huhn",
+  "license": "ISC",
+  "dependencies": {
+    "iota-payment": "0.0.14"
+  }
+}
